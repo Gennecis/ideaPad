@@ -87,7 +87,14 @@ export default function IdeaPad() {
       supabase.from("folders").select("*").eq("user_id", user.id).order("createdAt", { ascending: false })
     ])
 
-    if (ideasRes.data) setIdeas(ideasRes.data)
+    if (ideasRes.data) {
+      const normalizedIdeas = ideasRes.data.map((idea) => ({
+        ...idea,
+        folderId: idea.folder_id, // normalize for your UI
+      }))
+      setIdeas(normalizedIdeas)
+    }
+    
     if (foldersRes.data) setFolders(foldersRes.data)
 
     if (ideasRes.error && ideasRes.error.message) {
@@ -205,9 +212,24 @@ export default function IdeaPad() {
   }
 
   // Move idea to folder
-  const moveIdeaToFolder = (ideaId: string, folderId: string | null) => {
-    setIdeas((prev) => prev.map((idea) => (idea.id === ideaId ? { ...idea, folderId: folderId || undefined } : idea)))
+  const moveIdeaToFolder = async (ideaId: string, folderId: string | null) => {
+  setIdeas((prev) =>
+    prev.map((idea) =>
+      idea.id === ideaId ? { ...idea, folderId: folderId || undefined } : idea
+    )
+  )
+
+  // Persist the folder assignment
+  const { error } = await supabase
+    .from("ideas")
+    .update({ folder_id: folderId }) // <-- matches Supabase column name
+    .eq("id", ideaId)
+
+  if (error) {
+    console.error("Failed to update folder assignment:", error)
   }
+}
+
 
   // Create folder and assign idea
   const createFolderAndAssign = async (ideaId: string, folderName: string) => {
