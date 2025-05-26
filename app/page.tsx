@@ -14,12 +14,13 @@ import {
   ChevronDown,
   Eye,
   List,
+  Menu,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
@@ -48,6 +49,17 @@ export default function IdeaPad() {
   const [ideas, setIdeas] = useState<Idea[]>([])
   const [folders, setFolders] = useState<IdeaFolder[]>([])
   const [viewMode, setViewMode] = useState<ViewMode>("home")
+  useEffect(() => {
+  const savedView = localStorage.getItem("ideaPad_view") as ViewMode | null
+
+  if (savedView === "idea-detail") {
+    // fallback to ideas if there's no selected idea
+    setViewMode("ideas")
+  } else if (savedView) {
+    setViewMode(savedView)
+  }
+}, [])
+
   const [selectedIdea, setSelectedIdea] = useState<Idea | null>(null)
   const [previousView, setPreviousView] = useState<ViewMode>("home")
   const [searchQuery, setSearchQuery] = useState("")
@@ -72,6 +84,12 @@ export default function IdeaPad() {
   }, [])
 
 
+  useEffect(() => {
+  localStorage.setItem("ideaPad_view", viewMode)
+}, [viewMode])
+
+
+
   // Form states
   const [newIdeaTitle, setNewIdeaTitle] = useState("")
   const [newIdeaDescription, setNewIdeaDescription] = useState("")
@@ -94,7 +112,7 @@ export default function IdeaPad() {
       }))
       setIdeas(normalizedIdeas)
     }
-    
+
     if (foldersRes.data) setFolders(foldersRes.data)
 
     if (ideasRes.error && ideasRes.error.message) {
@@ -318,42 +336,56 @@ if (!user) {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-white border-b border-gray-200 px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <h1 className="text-2xl font-bold text-gray-900">ideaPad</h1>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between w-full">
+            <div className="flex items-center justify-between gap-4">
+              <h1 className="text-2xl font-bold text-gray-900">ideaPad</h1>
+              <Button
+                variant="outline"
+                onClick={async () => {
+                  await supabase.auth.signOut()
+                  router.push("/auth")
+                }}
+              >
+                Sign Out
+              </Button>
+            </div>
 
-            <Button
-            variant="outline"
-            onClick={async () => {
-              await supabase.auth.signOut()
-              router.push("/auth")
-            }}
-          >
-            Sign Out
-          </Button>
-
-
-            {/* View Toggle */}
+            {/* Responsive View Toggle */}
             {viewMode !== "home" && viewMode !== "idea-detail" && (
-              <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1">
-                <Button
-                  variant={viewMode === "ideas" ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => setViewMode("ideas")}
-                  className="h-8"
-                >
-                  <List className="w-4 h-4 mr-1" />
-                  Ideas
-                </Button>
-                <Button
-                  variant={viewMode === "folders" ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => setViewMode("folders")}
-                  className="h-8"
-                >
-                  <Folder className="w-4 h-4 mr-1" />
-                  Folders
-                </Button>
+              <div className="flex items-center gap-2">
+                {/* Desktop toggle */}
+                <div className="hidden sm:flex items-center gap-2 bg-gray-100 rounded-lg p-1">
+                  <Button
+                    variant={viewMode === "ideas" ? "default" : "ghost"}
+                    size="sm"
+                    onClick={() => setViewMode("ideas")}
+                  >
+                    <List className="w-4 h-4 mr-1" />
+                    Ideas
+                  </Button>
+                  <Button
+                    variant={viewMode === "folders" ? "default" : "ghost"}
+                    size="sm"
+                    onClick={() => setViewMode("folders")}
+                  >
+                    <Folder className="w-4 h-4 mr-1" />
+                    Folders
+                  </Button>
+                </div>
+
+                {/* Mobile hamburger toggle */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm" className="sm:hidden">
+                      <Menu className="w-5 h-5" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start">
+                    <DropdownMenuItem onClick={() => setViewMode("ideas")}>Ideas</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setViewMode("folders")}>Folders</DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             )}
           </div>
@@ -391,14 +423,18 @@ if (!user) {
             {viewMode === "folders" ? (
               <Dialog open={isNewFolderOpen} onOpenChange={setIsNewFolderOpen}>
                 <DialogTrigger asChild>
-                  <Button className="bg-blue-600 hover:bg-blue-700">
+                  <Button className="hidden sm:flex bg-blue-600 hover:bg-blue-700">
                     <FolderPlus className="w-4 h-4 mr-2" />
                     New Folder
                   </Button>
                 </DialogTrigger>
-                <DialogContent>
+                <DialogContent className="w-[90vw] max-w-sm sm:max-w-lg">
                   <DialogHeader>
                     <DialogTitle>Create New Folder</DialogTitle>
+                    <DialogDescription>
+                      Give your brilliance a home. Organize your ideas like a true visionary. Every great mind needs structure.
+                    </DialogDescription>
+
                   </DialogHeader>
                   <div className="space-y-4">
                     <Input
@@ -420,14 +456,18 @@ if (!user) {
             ) : (
               <Dialog open={isNewIdeaOpen} onOpenChange={setIsNewIdeaOpen}>
                 <DialogTrigger asChild>
-                  <Button className="bg-blue-600 hover:bg-blue-700">
+                  <Button className="hidden sm:flex bg-blue-600 hover:bg-blue-700">
                     <Plus className="w-4 h-4 mr-2" />
                     New Idea
                   </Button>
                 </DialogTrigger>
-                <DialogContent>
+                <DialogContent className="w-[90vw] max-w-sm sm:max-w-lg">
                   <DialogHeader>
                     <DialogTitle>Create New Idea</DialogTitle>
+                    <DialogDescription>
+                      Got a spark of genius? Capture it now before it disappears. The next big thing might start right here.
+                    </DialogDescription>
+
                   </DialogHeader>
                   <div className="space-y-4">
                     <Input
@@ -507,9 +547,18 @@ if (!user) {
 
         {/* Ideas View */}
         {viewMode === "ideas" && (
-          <div className="max-w-4xl mx-auto">
+          <div className="px-4 max-w-md sm:max-w-2xl mx-auto space-y-4">
             <div className="mb-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">All Ideas</h2>
+              <div className="flex items-center justify-between mb-2">
+                <h2 className="text-2xl font-bold text-gray-900">All Ideas</h2>
+                <button
+                  className="text-sm text-blue-600 hover:underline sm:hidden"
+                  onClick={() => setIsNewIdeaOpen(true)}
+                >
+                  new
+                </button>
+              </div>
+
               <p className="text-gray-600">{filteredIdeas.length} ideas</p>
             </div>
 
@@ -534,7 +583,7 @@ if (!user) {
                     onClick={() => navigateToView("idea-detail", idea)}
                   >
                     <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                         <div className="flex-1">
                           <h3 className="font-medium text-gray-900 group-hover:text-blue-600 transition-colors">
                             {idea.title}
@@ -566,9 +615,18 @@ if (!user) {
 
         {/* Folders View */}
         {viewMode === "folders" && (
-          <div className="max-w-4xl mx-auto">
+          <div className="px-4 max-w-md sm:max-w-2xl mx-auto space-y-4">
             <div className="mb-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Folders</h2>
+              <div className="flex items-center justify-between mb-2">
+                <h2 className="text-2xl font-bold text-gray-900">Folders</h2>
+                <button
+                  className="text-sm text-blue-600 hover:underline sm:hidden"
+                  onClick={() => setIsNewFolderOpen(true)}
+                >
+                  new
+                </button>
+              </div>
+
               <p className="text-gray-600">{filteredFolders.length} folders</p>
             </div>
 
@@ -579,7 +637,7 @@ if (!user) {
                   <Card>
                     <CollapsibleTrigger asChild>
                       <CardHeader className="cursor-pointer hover:bg-gray-50 transition-colors">
-                        <div className="flex items-center justify-between">
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                           <div className="flex items-center gap-3">
                             <ChevronDown
                               className={`w-4 h-4 transition-transform ${
@@ -881,8 +939,11 @@ if (!user) {
 
       {/* Edit Idea Dialog */}
       <Dialog open={!!editingIdea} onOpenChange={() => setEditingIdea(null)}>
-        <DialogContent>
+        <DialogContent className="w-[90vw] max-w-sm sm:max-w-lg">
           <DialogHeader>
+            <DialogDescription>
+              edit your idea.
+            </DialogDescription>
             <DialogTitle>Edit Idea</DialogTitle>
           </DialogHeader>
           {editingIdea && (
@@ -918,8 +979,11 @@ if (!user) {
 
       {/* Edit Folder Dialog */}
       <Dialog open={!!editingFolder} onOpenChange={() => setEditingFolder(null)}>
-        <DialogContent>
+        <DialogContent className="w-[90vw] max-w-sm sm:max-w-lg">
           <DialogHeader>
+            <DialogDescription>
+              Rename folder.
+            </DialogDescription>
             <DialogTitle>Rename Folder</DialogTitle>
           </DialogHeader>
           {editingFolder && (
