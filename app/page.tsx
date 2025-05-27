@@ -202,10 +202,27 @@ export default function IdeaPad() {
 
 
   // Update idea
-  const updateIdea = (updatedIdea: Idea) => {
-    setIdeas((prev) => prev.map((idea) => (idea.id === updatedIdea.id ? updatedIdea : idea)))
-    setEditingIdea(null)
+  const updateIdea = async (updatedIdea: Idea) => {
+  const { error } = await supabase
+    .from("ideas")
+    .update({
+      title: updatedIdea.title,
+      description: updatedIdea.description,
+      folder_id: updatedIdea.folderId ?? null,
+    })
+    .eq("id", updatedIdea.id)
+
+  if (error) {
+    console.error("Failed to update idea:", error)
+    return
   }
+
+  setIdeas((prev) =>
+    prev.map((idea) => (idea.id === updatedIdea.id ? updatedIdea : idea))
+  )
+  setEditingIdea(null)
+}
+
 
   // Delete idea
   const deleteIdea = async (ideaId: string) => {
@@ -223,20 +240,58 @@ export default function IdeaPad() {
   }
 }
 
-
   // Update folder
-  const updateFolder = (updatedFolder: IdeaFolder) => {
-    setFolders((prev) => prev.map((folder) => (folder.id === updatedFolder.id ? updatedFolder : folder)))
-    setEditingFolder(null)
+  const updateFolder = async (updatedFolder: IdeaFolder) => {
+  const { error } = await supabase
+    .from("folders")
+    .update({ name: updatedFolder.name })
+    .eq("id", updatedFolder.id)
+
+  if (error) {
+    console.error("Failed to update folder:", error)
+    return
   }
+
+  setFolders((prev) =>
+    prev.map((folder) => (folder.id === updatedFolder.id ? updatedFolder : folder))
+  )
+  setEditingFolder(null)
+}
+
 
   // Delete folder
-  const deleteFolder = (folderId: string) => {
-    // Remove folder assignment from ideas
-    setIdeas((prev) => prev.map((idea) => (idea.folderId === folderId ? { ...idea, folderId: undefined } : idea)))
-    // Remove folder
-    setFolders((prev) => prev.filter((folder) => folder.id !== folderId))
+  const deleteFolder = async (folderId: string) => {
+  // 1. Set folder_id to null for all ideas in the folder
+  const { error: updateError } = await supabase
+    .from("ideas")
+    .update({ folder_id: null })
+    .eq("folder_id", folderId)
+
+  if (updateError) {
+    console.error("Failed to remove ideas from folder:", updateError)
+    return
   }
+
+  // 2. Delete the folder itself
+  const { error: deleteError } = await supabase
+    .from("folders")
+    .delete()
+    .eq("id", folderId)
+
+  if (deleteError) {
+    console.error("Failed to delete folder:", deleteError)
+    return
+  }
+
+  // 3. Update UI state
+  setIdeas((prev) =>
+    prev.map((idea) =>
+      idea.folderId === folderId ? { ...idea, folderId: undefined } : idea
+    )
+  )
+  setFolders((prev) => prev.filter((folder) => folder.id !== folderId))
+}
+
 
   // Move idea to folder
   const moveIdeaToFolder = async (ideaId: string, folderId: string | null) => {
