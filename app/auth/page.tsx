@@ -33,7 +33,7 @@ export default function AuthPage() {
   useEffect(() => {
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' && session) {
-        router.push('/') // Redirect to homepage after login
+        router.replace('/') // Redirect to homepage after login
       }
     })
 

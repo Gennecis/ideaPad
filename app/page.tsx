@@ -208,12 +208,21 @@ export default function IdeaPad() {
   }
 
   // Delete idea
-  const deleteIdea = (ideaId: string) => {
-    setIdeas((prev) => prev.filter((idea) => idea.id !== ideaId))
-    if (selectedIdea?.id === ideaId) {
-      goBack()
-    }
+  const deleteIdea = async (ideaId: string) => {
+  const { error } = await supabase.from("ideas").delete().eq("id", ideaId)
+
+  if (error) {
+    console.error("Failed to delete idea:", error)
+    return
   }
+
+  setIdeas((prev) => prev.filter((idea) => idea.id !== ideaId))
+
+  if (selectedIdea?.id === ideaId) {
+    goBack()
+  }
+}
+
 
   // Update folder
   const updateFolder = (updatedFolder: IdeaFolder) => {
@@ -588,6 +597,9 @@ if (!user) {
                           <h3 className="font-medium text-gray-900 group-hover:text-blue-600 transition-colors">
                             {idea.title}
                           </h3>
+                          <p className="text-sm text-gray-600 line-clamp-2 mt-1">
+                            {idea.description}
+                          </p>
                           <div className="flex items-center gap-2 mt-1">
                             <span className="text-sm text-gray-500">
                               {new Date(idea.createdAt).toLocaleDateString()}

@@ -1,5 +1,5 @@
 {
-  "name": "my-v0-project",
+  "name": "ideapad",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -40,6 +40,7 @@
     "@supabase/auth-js": "^2.70.0",
     "@supabase/auth-ui-react": "^0.4.7",
     "@supabase/supabase-js": "^2.49.8",
+    "@tailwindcss/line-clamp": "^0.4.4",
     "autoprefixer": "^10.4.20",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
